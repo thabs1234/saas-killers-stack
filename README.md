@@ -45,6 +45,26 @@ docker compose up -d
 First run of Listmonk: open http://localhost:9000, run the DB migration, set admin login.
 First run of Stirling-PDF: nothing to configure — it just works.
 
+## Prove it actually runs (CI smoke test)
+
+The `.github/workflows/smoke.yml` file (ready in this repo's local working tree, not yet
+pushed) starts the core stack on GitHub's free Linux runners — which DO have Docker — and
+curls both ports to prove Stirling-PDF and Listmonk really boot (not just parse). The
+compose file is also YAML-verified locally.
+
+It's NOT yet pushed/enabled because adding a workflow file requires a one-time `workflow`
+scope on the push token (Thabang's `gh` token has `repo` only). To switch it on (one
+command, opens your browser), then commit+push the file:
+
+```bash
+gh auth refresh -h github.com -s workflow
+git add .github/workflows/smoke.yml
+git commit -m "ci: enable stack smoke test"
+git push
+```
+
+After that, every push + manual `workflow_dispatch` runs the smoke test for free.
+
 ## Notes / honesty
 
 - Docker is **not** installed on the build host this repo was generated on, so the compose file is verified for *syntax and image references*, not live-run here. Run it on any machine with Docker.
