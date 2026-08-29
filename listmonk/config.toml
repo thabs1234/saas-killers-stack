@@ -1,0 +1,16 @@
+# Listmonk config for the saas-killers-stack (local dev).
+# Mounted into the container at /listmonk/config.toml.
+# Values are hardcoded for a local single-host stack (no secrets worth protecting).
+
+[app]
+address = "0.0.0.0:9000"
+admin_username = "listmonk"
+admin_password = "listmonk"
+# Disable the demo/public subscriber form noise for a local stack.
+[db]
+host = "listmonk-db"
+port = 5432
+user = "listmonk"
+password = "listmonk"
+database = "listmonk"
+ssl_mode = "disable"

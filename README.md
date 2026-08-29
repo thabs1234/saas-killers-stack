@@ -38,11 +38,11 @@ You do NOT need to be a developer. The repo + an AI assistant do the heavy lifti
 docker compose up -d
 # then open:
 #   Stirling-PDF  -> http://localhost:8080
-#   Listmonk      -> http://localhost:9000  (admin setup on first open)
+#   Listmonk      -> http://localhost:9000  (admin: listmonk/listmonk, DB auto-migrated via --install)
 #   Launchpad     -> open launchpad/index.html
 ```
 
-First run of Listmonk: open http://localhost:9000, run the DB migration, set admin login.
+First run of Listmonk: the container runs `--install` against the bundled `listmonk/config.toml`, which auto-migrates the Postgres schema on first boot. Log in with `listmonk` / `listmonk`.
 First run of Stirling-PDF: nothing to configure — it just works. `SECURITY_ENABLELOGIN=false` is set in the compose so the root stays open for local use (newer images gate the UI behind a login by default).
 
 ## Prove it actually runs (CI smoke test)

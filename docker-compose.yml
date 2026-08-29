@@ -25,13 +25,11 @@ services:
   listmonk:
     image: listmonk/listmonk:latest
     container_name: listmonk
+    command: ["./listmonk", "--install", "--config", "/listmonk/config.toml"]
     ports:
       - "9000:9000"
-    environment:
-      - LISTMONK_APP__DB__HOST=listmonk-db
-      - LISTMONK_APP__DB__USER=listmonk
-      - LISTMONK_APP__DB__PASSWORD=listmonk
-      - LISTMONK_APP__DB__DATABASE=listmonk
+    volumes:
+      - ./listmonk/config.toml:/listmonk/config.toml
     depends_on:
       listmonk-db:
         condition: service_healthy
