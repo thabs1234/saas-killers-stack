@@ -17,8 +17,6 @@ services:
     build:
       context: ./build-context/dub-web
       dockerfile: Dockerfile
-      args:
-        NEXT_PUBLIC_APP_URL: ${DUB_URL:-http://localhost:3000}
     restart: unless-stopped
     depends_on:
       ps-mysql:
