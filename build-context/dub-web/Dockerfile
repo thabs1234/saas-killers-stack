@@ -22,6 +22,13 @@ FROM deps AS builder
 # Build all workspace packages (prisma client, shared libs) then the web app.
 # Dub's Next.js build is memory-hungry; raise Node's heap so it doesn't OOM on small runners.
 ENV NODE_OPTIONS=--max-old-space-size=8192
+# next build collects page data for ALL routes, including paid-SaaS integration crons
+# (e.g. firstpromoter import needs a Google authenticator). Supply dummy non-empty
+# values so those route constructors initialize during build without real credentials.
+ENV GOOGLE_CLIENT_ID=dummy-local-build
+ENV GOOGLE_CLIENT_SECRET=dummy-local-build
+ENV UPSTASH_REDIS_REST_URL=http://localhost:8079
+ENV UPSTASH_REDIS_REST_TOKEN=dummy
 RUN pnpm -r --filter "./packages/**" build || true
 RUN pnpm --filter web exec prisma generate || true
 RUN pnpm --filter web build
