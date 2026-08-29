@@ -1,0 +1,35 @@
+name: stack-smoke-test
+# Proves the core stack ACTUALLY RUNS (not just parses) using GitHub's free Linux
+# runners, which have Docker. Runs on every push + manual dispatch.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Start core stack
+        run: docker compose up -d
+
+      - name: Wait for containers to boot
+        run: sleep 40
+
+      - name: Verify Stirling-PDF (port 8080)
+        run: |
+          code=$(curl -s -o /tmp/stirling.html -w "%{http_code}" http://localhost:8080)
+          echo "Stirling-PDF HTTP $code"
+          test "$code" = "200"
+
+      - name: Verify Listmonk (port 9000)
+        run: |
+          code=$(curl -s -o /tmp/listmonk.html -w "%{http_code}" http://localhost:9000)
+          echo "Listmonk HTTP $code"
+          test "$code" = "200"
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v
