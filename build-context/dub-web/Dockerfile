@@ -21,7 +21,7 @@ RUN pnpm install --frozen-lockfile || pnpm install --no-frozen-lockfile
 FROM deps AS builder
 # Build all workspace packages (prisma client, shared libs) then the web app.
 # Dub's Next.js build is memory-hungry; raise Node's heap so it doesn't OOM on small runners.
-ENV NODE_OPTIONS=--max-old-space-size=4096
+ENV NODE_OPTIONS=--max-old-space-size=8192
 RUN pnpm -r --filter "./packages/**" build || true
 RUN pnpm --filter web exec prisma generate || true
 RUN pnpm --filter web build
