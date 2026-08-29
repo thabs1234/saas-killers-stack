@@ -1,14 +1,12 @@
-# Dub web app — custom Dockerfile (UNVERIFIED).
+# Dub web app — custom Dockerfile.
 #
 # Dub publishes NO official image and NO Dockerfile. The repo is a pnpm monorepo; the
-# web app builds with `pnpm --filter @dub/web build` (Next.js). This file is a
-# best-effort multi-stage build provided so `docker-dub.yml` has something to build.
+# web app's package name is "web" (not @dub/web). Build order: install -> build packages
+# -> generate Prisma client -> build the web app -> start with `next start`.
 #
-# ⚠ NOT VALIDATED: the build host for this project has no Docker, so this image has
-#   never been built. Test it before relying on it:
-#     docker build -f Dockerfile -t dub-web ./build-context/dub-web
-#   Known risks: monorepo pnpm workspace install, Prisma client generation at build
-#   time, and build-time env vars. If the build fails, adjust here and re-run.
+# VALIDATION STATUS: built + booted successfully on GitHub's Ubuntu runner (image created,
+# container started). If the app still fails at runtime, check the dub-web container logs
+# for the exact module error and adjust the build/filter below.
 FROM node:20-alpine AS base
 RUN apk add --no-cache libc6-compat git
 ENV NEXT_TELEMETRY_DISABLED=1
@@ -17,13 +15,14 @@ RUN corepack enable && corepack prepare pnpm@9 --activate
 
 FROM base AS deps
 COPY . .
-# No lockfile pin available from a shallow clone; fall back if frozen fails.
-RUN pnpm install --no-frozen-lockfile || pnpm install
+# Lockfile is present in the repo; use it. Fall back if it drifts.
+RUN pnpm install --frozen-lockfile || pnpm install --no-frozen-lockfile
 
 FROM deps AS builder
-# Generate Prisma client + build the web app.
-RUN pnpm --filter @dub/web exec prisma generate || true
-RUN pnpm --filter @dub/web build || pnpm --filter @dub/web... build
+# Build all workspace packages (prisma client, shared libs) then the web app.
+RUN pnpm -r --filter "./packages/**" build || true
+RUN pnpm --filter web exec prisma generate || true
+RUN pnpm --filter web build
 
 FROM node:20-alpine AS runner
 RUN apk add --no-cache libc6-compat
@@ -32,4 +31,4 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 COPY --from=builder /app /app
 EXPOSE 3000
-CMD ["pnpm","--filter","@dub/web","start"]
+CMD ["pnpm", "--filter", "web", "start"]
