@@ -20,9 +20,9 @@ jobs:
 
       - name: Verify Stirling-PDF (port 8080)
         run: |
-          for i in $(seq 1 10); do
-            code=$(curl -s -o /tmp/stirling.html -w "%{http_code}" http://localhost:8080)
-            echo "attempt $i: Stirling-PDF HTTP $code"
+          for i in $(seq 1 20); do
+            code=$(curl -s -o /tmp/stirling.html -w "%{http_code}" http://localhost:8080/api/v1/info/status)
+            echo "attempt $i: Stirling-PDF /api/v1/info/status HTTP $code"
             [ "$code" = "200" ] && break
             sleep 5
           done
