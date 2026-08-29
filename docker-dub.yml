@@ -1,0 +1,149 @@
+# Dub (replaces Bitly) — link shortener + click tracking.
+# Official self-host needs Vercel + Tinybird + Upstash + PlanetScale (all paid SaaS).
+# This file runs the URL-shortening core FREE-ONLY on local Docker:
+#   - MySQL 8 (instead of PlanetScale)
+#   - ps-http-sim (REST shim so edge middleware can reach MySQL without TCP)
+#   - mailhog (local SMTP for dev emails)
+#   - dub web app, BUILT locally from a pinned upstream commit (no stale fork kept here)
+# Analytics (Tinybird), billing (Stripe), QStash jobs, and OAuth are STUBBED — you get
+# shortening + redirects + a working dashboard, not the full enterprise feature set.
+#
+# Run:  bash scripts/setup_dub.sh   (it fetches the build context for you)
+# First boot: open http://localhost:3000, create an account (mailhog catches the email).
+
+services:
+  dub-web:
+    container_name: dub-web
+    build:
+      context: ./build-context/dub-web
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_APP_URL: ${DUB_URL:-http://localhost:3000}
+    restart: unless-stopped
+    depends_on:
+      ps-mysql:
+        condition: service_healthy
+    ports:
+      - "${DUB_PORT:-3000}:3000"
+    environment:
+      NEXT_PUBLIC_APP_URL: ${DUB_URL:-http://localhost:3000}
+      NEXTAUTH_URL: ${DUB_URL:-http://localhost:3000}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789}
+      CRON_SECRET: ${CRON_SECRET:-cron_local_secret}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789}
+      DATABASE_URL: mysql://root@ps-mysql:3306/planetscale
+      PLANETSCALE_DATABASE_URL: http://ps-http-sim:3900
+      UPSTASH_REDIS_REST_URL: http://dub-local-redis:8079
+      UPSTASH_REDIS_REST_TOKEN: local
+      UPSTASH_VECTOR_REST_URL: http://dub-local-redis:8079
+      UPSTASH_VECTOR_REST_TOKEN: local
+      QSTASH_URL: ""
+      QSTASH_TOKEN: ""
+      QSTASH_CURRENT_SIGNING_KEY: ""
+      QSTASH_NEXT_SIGNING_KEY: ""
+      TINYBIRD_API_KEY: ""
+      TINYBIRD_API_URL: ""
+      RESEND_API_KEY: ""
+      SMTP_HOST: mailhog
+      SMTP_PORT: "1025"
+      SMTP_USER: ""
+      SMTP_PASSWORD: ""
+      STRIPE_SECRET_KEY: ""
+      NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ""
+      STORAGE_ACCESS_KEY_ID: minioadmin
+      STORAGE_SECRET_ACCESS_KEY: minioadmin
+      STORAGE_ENDPOINT: http://minio:9000
+      STORAGE_BASE_URL: http://localhost:9000
+      STORAGE_PUBLIC_BUCKET: dub
+      STORAGE_PRIVATE_BUCKET: dub-private
+    networks:
+      - dub-network
+
+  # serverless-redis-http: REST shim over plain Redis (replaces Upstash Redis)
+  dub-local-redis:
+    image: hiett/serverless-redis-http:latest
+    container_name: dub-local-redis
+    restart: unless-stopped
+    environment:
+      REDIS_URL: redis://dub-redis:6379
+    ports:
+      - "8079:8079"
+    depends_on:
+      - dub-redis
+    networks:
+      - dub-network
+
+  dub-redis:
+    image: redis:7-alpine
+    container_name: dub-redis
+    restart: unless-stopped
+    networks:
+      - dub-network
+
+  ps-mysql:
+    image: mysql:8.0
+    container_name: dub-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: planetscale
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+    command:
+      - --max_connections=1000
+      - --default-authentication-plugin=mysql_native_password
+    volumes:
+      - ./data/dub-mysql:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "--skip-password"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    ports:
+      - "3306:3306"
+    networks:
+      - dub-network
+
+  planetscale-proxy:
+    image: ghcr.io/mattrobenolt/ps-http-sim:latest
+    container_name: dub-ps-proxy
+    command:
+      - -mysql-no-pass
+      - -listen-port=3900
+      - -mysql-dbname=planetscale
+      - -mysql-addr=ps-mysql
+    depends_on:
+      - ps-mysql
+    ports:
+      - "3900:3900"
+    networks:
+      - dub-network
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: dub-mailhog
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    networks:
+      - dub-network
+
+  minio:
+    image: minio/minio:latest
+    container_name: dub-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9001:9001"
+    volumes:
+      - ./data/dub-minio:/data
+    networks:
+      - dub-network
+
+volumes:
+  dub-mysql:
+
+networks:
+  dub-network:
+    driver: bridge

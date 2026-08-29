@@ -57,7 +57,15 @@ services:
       retries: 10
     restart: unless-stopped
 
-  # Excalidraw: no official single-container image.
-  # Use excalidraw.com (free) or the Vercel one-click deploy — see EXTENDED.md.
-  # Cap: desktop app from github.com/CapSoftware/Cap — not containerised here.
-  # Dub: needs Postgres+Redis+Tinybird — use dubinc/dub official compose — see EXTENDED.md.
+  # Excalidraw (replaces Miro) — official self-host client image (no collab/sharing).
+  excalidraw:
+    image: excalidraw/excalidraw:latest
+    container_name: excalidraw
+    ports:
+      - "5000:80"
+    restart: unless-stopped
+
+  # Cap (replaces Loom) and Dub (replaces Bitly) are NOT in this core file — they
+  # need extra infra (MySQL/MinIO for Cap; MySQL+build for Dub). Their compose + one-
+  # command setup live in docker-cap.yml / docker-dub.yml with scripts/setup_cap.sh and
+  # scripts/setup_dub.sh. Everything is free-only; no paid services required.

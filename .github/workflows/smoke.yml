@@ -1,6 +1,9 @@
 name: stack-smoke-test
 # Proves the core stack ACTUALLY RUNS (not just parses) using GitHub's free Linux
-# runners, which have Docker. Runs on every push + manual dispatch.
+# runners, which have Docker. The core stack (Stirling-PDF + Listmonk + Excalidraw)
+# is booted and curled. Cap and Dub compose files are syntax-validated (docker compose
+# config) — their images require builds (Cap media-server, Dub web) that are not run
+# here; see README/EXTENDED for the one-command setup scripts.
 on:
   push:
     branches: [main]
@@ -12,7 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Start core stack
+      - name: Start core stack (Stirling-PDF + Listmonk + Excalidraw)
         run: docker compose up -d
 
       - name: Wait for Postgres to accept connections
@@ -46,10 +49,26 @@ jobs:
           done
           test "$code" = "200"
 
+      - name: Verify Excalidraw (port 5000)
+        run: |
+          code="000"
+          for i in $(seq 1 30); do
+            code=$(curl -s -o /tmp/excalidraw.html -w "%{http_code}" --max-time 5 http://localhost:5000 || true)
+            echo "attempt $i: Excalidraw HTTP $code"
+            [ "$code" = "200" ] && break
+            sleep 5
+          done
+          test "$code" = "200"
+
+      - name: Validate Cap + Dub compose files (syntax only)
+        run: |
+          docker compose -f docker-cap.yml config >/dev/null && echo "docker-cap.yml: OK"
+          docker compose -f docker-dub.yml config >/dev/null && echo "docker-dub.yml: OK"
+
       - name: Tear down
         if: always()
         run: |
-          docker compose logs --no-color listmonk listmonk-db >> /tmp/stack.log 2>&1 || true
+          docker compose logs --no-color listmonk listmonk-db stirling-pdf excalidraw >> /tmp/stack.log 2>&1 || true
           docker compose down -v
           echo "=== last 40 lines of container logs (for debugging) ==="
           tail -40 /tmp/stack.log || true

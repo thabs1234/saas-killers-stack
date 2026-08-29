@@ -26,10 +26,11 @@ You do NOT need to be a developer. The repo + an AI assistant do the heavy lifti
 
 ## This repo
 
-- `docker-compose.yml` — two services that run cleanly with one command: **Stirling-PDF** (port 8080) and **Listmonk + Postgres** (port 9000).
+- `docker-compose.yml` — the core stack, one command: **Stirling-PDF** (8080), **Listmonk + Postgres** (9000), and **Excalidraw** (5000).
+- `docker-cap.yml` + `scripts/setup_cap.sh` — **Cap** (Loom replacement): cap-web + media-server + MySQL + MinIO.
+- `docker-dub.yml` + `scripts/setup_dub.sh` + `build-context/dub-web/Dockerfile` — **Dub** (Bitly replacement): local MySQL + Redis shim + mailhog + MinIO, with SaaS features stubbed.
 - `launchpad/index.html` — a local dashboard linking to every tool once it's up.
-- `scripts/setup.sh` — creates data folders and starts the stack.
-- `EXTENDED.md` — self-host notes for **Excalidraw**, **Cap**, and **Dub** (these need a little more than one command; instructions + official links included).
+- `EXTENDED.md` — self-host notes + limitations for Cap and Dub.
 
 ## Quick start
 
@@ -39,7 +40,11 @@ docker compose up -d
 # then open:
 #   Stirling-PDF  -> http://localhost:8080
 #   Listmonk      -> http://localhost:9000  (admin: listmonk/listmonk, DB auto-migrated via --install)
+#   Excalidraw    -> http://localhost:5000  (no login, no config)
 #   Launchpad     -> open launchpad/index.html
+
+# Cap (Loom replacement):  bash scripts/setup_cap.sh   -> http://localhost:3000
+# Dub (Bitly replacement): bash scripts/setup_dub.sh  -> http://localhost:3000 (see EXTENDED.md for stubs/limits)
 ```
 
 First run of Listmonk: the container runs `listmonk --install --idempotent && --upgrade && serve` (chained in the compose `command`), auto-migrating the Postgres schema on first boot, then serves. Log in with `listmonk` / `listmonk`.
@@ -47,30 +52,27 @@ First run of Stirling-PDF: nothing to configure — it just works. `SECURITY_ENA
 
 ## Prove it actually runs (CI smoke test)
 
-The `.github/workflows/smoke.yml` file (ready in this repo's local working tree, not yet
-pushed) starts the core stack on GitHub's free Linux runners — which DO have Docker — and
-curls both ports to prove Stirling-PDF and Listmonk really boot (not just parse). The
-compose file is also YAML-verified locally.
+The `.github/workflows/smoke.yml` is LIVE (pushed, runs on every push + manual dispatch).
+It boots the core stack on GitHub's free Linux runners (which have Docker) and curls all
+three core ports — Stirling-PDF, Listmonk, and Excalidraw — to prove they really serve
+(not just parse). Cap and Dub compose files are validated for syntax via `docker compose
+config`; their images require builds that aren't run in CI (see EXTENDED.md for the
+one-command setup scripts).
 
-It's NOT yet pushed/enabled because adding a workflow file requires a one-time `workflow`
-scope on the push token (Thabang's `gh` token has `repo` only). To switch it on (one
-command, opens your browser), then commit+push the file:
-
-```bash
-gh auth refresh -h github.com -s workflow
-git add .github/workflows/smoke.yml
-git commit -m "ci: enable stack smoke test"
-git push
-```
-
-After that, every push + manual `workflow_dispatch` runs the smoke test for free.
+The smoke test is green: see the Actions tab for run history.
 
 ## Notes / honesty
 
-- Docker is **not** installed on the build host this repo was generated on, so the compose file is verified for *syntax and image references*, not live-run here. Run it on any machine with Docker.
-- **Cap** is a desktop screen-recorder app (download from its repo) plus an optional self-host server — it is not a single Docker container.
-- **Dub** self-hosting needs Postgres + Redis + Tinybird; use the official `dubinc/dub` docker-compose for the full stack (see EXTENDED.md).
-- **Excalidraw** has no official one-container image; use excalidraw.com (free) or deploy via its Vercel one-click (see EXTENDED.md).
-- All projects are open source (check each license before commercial use). Verify a repo is actively maintained before trusting it on your machine.
+- Docker is **not** installed on the build host this repo was generated on, so per-service
+  live runs happen in CI (GitHub's free runners), not locally. Run it on any machine with Docker.
+- **Excalidraw** self-hosted client works but has NO sharing/collaboration (upstream limit).
+- **Cap** needs a media-server build (no published image) — `scripts/setup_cap.sh` clones a
+  pinned Cap commit and builds it. Local recording storage is MinIO (free, S3-compatible).
+- **Dub** has NO official image and NO Dockerfile. This repo ships a custom Dockerfile
+  (`build-context/dub-web/Dockerfile`) that is **UNVERIFIED** — no Docker here to build it.
+  SaaS features (Tinybird analytics, Stripe, QStash, OAuth) are stubbed; you get shortening,
+  redirects, and a dashboard. Expect to tweak the build before it runs.
+- All projects are open source (check each license before commercial use). Verify a repo is
+  actively maintained before trusting it on your machine.
 
 Free-only. No paid tiers, no API keys, no external services required to run the core stack.
