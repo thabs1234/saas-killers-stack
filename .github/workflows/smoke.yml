@@ -16,18 +16,26 @@ jobs:
         run: docker compose up -d
 
       - name: Wait for containers to boot
-        run: sleep 40
+        run: sleep 45
 
       - name: Verify Stirling-PDF (port 8080)
         run: |
-          code=$(curl -s -o /tmp/stirling.html -w "%{http_code}" http://localhost:8080)
-          echo "Stirling-PDF HTTP $code"
+          for i in $(seq 1 10); do
+            code=$(curl -s -o /tmp/stirling.html -w "%{http_code}" http://localhost:8080)
+            echo "attempt $i: Stirling-PDF HTTP $code"
+            [ "$code" = "200" ] && break
+            sleep 5
+          done
           test "$code" = "200"
 
       - name: Verify Listmonk (port 9000)
         run: |
-          code=$(curl -s -o /tmp/listmonk.html -w "%{http_code}" http://localhost:9000)
-          echo "Listmonk HTTP $code"
+          for i in $(seq 1 10); do
+            code=$(curl -s -o /tmp/listmonk.html -w "%{http_code}" http://localhost:9000)
+            echo "attempt $i: Listmonk HTTP $code"
+            [ "$code" = "200" ] && break
+            sleep 5
+          done
           test "$code" = "200"
 
       - name: Tear down

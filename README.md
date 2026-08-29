@@ -43,7 +43,7 @@ docker compose up -d
 ```
 
 First run of Listmonk: open http://localhost:9000, run the DB migration, set admin login.
-First run of Stirling-PDF: nothing to configure — it just works.
+First run of Stirling-PDF: nothing to configure — it just works (security mode is off by default in this compose so the root stays open for local use).
 
 ## Prove it actually runs (CI smoke test)
 
