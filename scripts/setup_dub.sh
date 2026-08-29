@@ -1,19 +1,27 @@
 #!/usr/bin/env bash
 # setup_dub.sh — fetch Dub build context and start the local self-host stack.
-# Dub's web app needs a build (no published image). We clone at a pinned commit and
-# build locally. SaaS features (Tinybird analytics, Stripe, QStash, OAuth) are stubbed
-# via env vars in docker-dub.yml — you get URL shortening + redirects + dashboard.
+# Dub's web app needs a build (no published image, no upstream Dockerfile). We clone the
+# pinned commit into a temp dir, then sync it into ./build-context/dub-web so the custom
+# Dockerfile already in that folder (build-context/dub-web/Dockerfile) is preserved and
+# the compose build context resolves correctly.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
 PINNED_DUB_COMMIT="cd857be"   # Dub main HEAD 2026-08-29; verify at github.com/dubinc/dub/commits/main
 CTX_DIR="build-context/dub-web"
+TMP="$(mktemp -d)"
 
-if [ ! -d "$CTX_DIR/.git" ] && [ ! -f "$CTX_DIR/apps/web/Dockerfile" ]; then
-  echo "==> Cloning Dub (pinned $PINNED_DUB_COMMIT) for web build context..."
+if [ ! -f "$CTX_DIR/Dockerfile" ] || [ ! -d "$CTX_DIR/apps/web" ]; then
+  echo "==> Cloning Dub (pinned $PINNED_DUB_COMMIT) into temp, syncing into $CTX_DIR..."
   rm -rf "$CTX_DIR"
-  git clone https://github.com/dubinc/dub.git "$CTX_DIR"
-  git -C "$CTX_DIR" checkout "$PINNED_DUB_COMMIT" 2>/dev/null || echo "WARN: pin checkout failed; using default branch"
+  git clone https://github.com/dubinc/dub.git "$TMP/dub"
+  git -C "$TMP/dub" checkout "$PINNED_DUB_COMMIT" 2>/dev/null || echo "WARN: pin checkout failed; using default branch"
+  mkdir -p "$CTX_DIR"
+  # Copy everything except our own Dockerfile, then ensure our Dockerfile is present.
+  git -C "$TMP/dub" archive HEAD | tar -x -C "$CTX_DIR"
+  # Our custom build file lives at build-context/dub-web/Dockerfile (committed in repo).
+  test -f "build-context/dub-web/Dockerfile" || { echo "ERR: custom Dockerfile missing"; exit 1; }
+  rm -rf "$TMP"
 fi
 
 echo "==> Starting Dub stack (web build + mysql + redis shim + mailhog + minio)..."
