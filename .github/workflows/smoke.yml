@@ -15,13 +15,20 @@ jobs:
       - name: Start core stack
         run: docker compose up -d
 
-      - name: Wait for containers to boot
-        run: sleep 45
+      - name: Wait for Postgres to accept connections
+        run: |
+          for i in $(seq 1 30); do
+            if docker exec listmonk-db pg_isready -U listmonk >/dev/null 2>&1; then
+              echo "postgres ready after ${i} tries"; break
+            fi
+            echo "waiting for postgres... ($i)"; sleep 3
+          done
 
       - name: Verify Stirling-PDF (port 8080)
         run: |
-          for i in $(seq 1 20); do
-            code=$(curl -s -o /tmp/stirling.html -w "%{http_code}" http://localhost:8080/api/v1/info/status)
+          code="000"
+          for i in $(seq 1 30); do
+            code=$(curl -s -o /tmp/stirling.html -w "%{http_code}" --max-time 5 http://localhost:8080/api/v1/info/status || true)
             echo "attempt $i: Stirling-PDF /api/v1/info/status HTTP $code"
             [ "$code" = "200" ] && break
             sleep 5
@@ -30,8 +37,9 @@ jobs:
 
       - name: Verify Listmonk (port 9000)
         run: |
-          for i in $(seq 1 10); do
-            code=$(curl -s -o /tmp/listmonk.html -w "%{http_code}" http://localhost:9000)
+          code="000"
+          for i in $(seq 1 30); do
+            code=$(curl -s -o /tmp/listmonk.html -w "%{http_code}" --max-time 5 http://localhost:9000 || true)
             echo "attempt $i: Listmonk HTTP $code"
             [ "$code" = "200" ] && break
             sleep 5

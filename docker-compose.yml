@@ -33,7 +33,8 @@ services:
       - LISTMONK_APP__DB__PASSWORD=listmonk
       - LISTMONK_APP__DB__DATABASE=listmonk
     depends_on:
-      - listmonk-db
+      listmonk-db:
+        condition: service_healthy
     restart: unless-stopped
 
   listmonk-db:
@@ -45,6 +46,11 @@ services:
       - POSTGRES_DB=listmonk
     volumes:
       - ./data/listmonk:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U listmonk"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
     restart: unless-stopped
 
   # Excalidraw: no official single-container image.
