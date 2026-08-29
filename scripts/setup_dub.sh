@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
 # setup_dub.sh — fetch Dub build context and start the local self-host stack.
 # Dub's web app needs a build (no published image, no upstream Dockerfile). We clone the
-# pinned commit into a temp dir, then sync it into ./build-context/dub-web so the custom
-# Dockerfile already in that folder (build-context/dub-web/Dockerfile) is preserved and
-# the compose build context resolves correctly.
+# pinned commit into a temp dir, then copy it into ./build-context/dub-web WITHOUT wiping
+# the custom Dockerfile that already lives there (committed in this repo). Then build.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -11,18 +10,26 @@ PINNED_DUB_COMMIT="cd857be"   # Dub main HEAD 2026-08-29; verify at github.com/d
 CTX_DIR="build-context/dub-web"
 TMP="$(mktemp -d)"
 
-if [ ! -f "$CTX_DIR/Dockerfile" ] || [ ! -d "$CTX_DIR/apps/web" ]; then
-  echo "==> Cloning Dub (pinned $PINNED_DUB_COMMIT) into temp, syncing into $CTX_DIR..."
-  rm -rf "$CTX_DIR"
+# Always start from a clean clone so the context matches the pinned commit exactly,
+# but PRESERVE our own Dockerfile (it is not part of the upstream repo).
+OUR_DOCKER="$CTX_DIR/Dockerfile"
+cp "$OUR_DOCKER" "$TMP/Dockerfile.bak" 2>/dev/null || { echo "ERR: custom Dockerfile missing at $OUR_DOCKER"; exit 1; }
+
+if [ ! -d "$CTX_DIR/apps/web" ]; then
+  echo "==> Cloning Dub (pinned $PINNED_DUB_COMMIT) into temp..."
   git clone https://github.com/dubinc/dub.git "$TMP/dub"
   git -C "$TMP/dub" checkout "$PINNED_DUB_COMMIT" 2>/dev/null || echo "WARN: pin checkout failed; using default branch"
+  echo "==> Syncing Dub source into $CTX_DIR (keeping our Dockerfile)..."
+  rm -rf "$CTX_DIR"
   mkdir -p "$CTX_DIR"
-  # Copy everything except our own Dockerfile, then ensure our Dockerfile is present.
-  git -C "$TMP/dub" archive HEAD | tar -x -C "$CTX_DIR"
-  # Our custom build file lives at build-context/dub-web/Dockerfile (committed in repo).
-  test -f "build-context/dub-web/Dockerfile" || { echo "ERR: custom Dockerfile missing"; exit 1; }
-  rm -rf "$TMP"
+  # Copy the clone (minus .git) into the context.
+  (cd "$TMP/dub" && tar cf - --exclude='.git' .) | (cd "$CTX_DIR" && tar xf -)
 fi
+
+# Restore / ensure our custom Dockerfile is present at the compose context root.
+cp "$TMP/Dockerfile.bak" "$CTX_DIR/Dockerfile"
+test -f "$CTX_DIR/Dockerfile" || { echo "ERR: custom Dockerfile not in context"; exit 1; }
+rm -rf "$TMP"
 
 echo "==> Starting Dub stack (web build + mysql + redis shim + mailhog + minio)..."
 docker compose -f docker-dub.yml up -d

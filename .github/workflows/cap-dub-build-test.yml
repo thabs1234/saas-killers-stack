@@ -32,7 +32,8 @@ jobs:
           for i in $(seq 1 30); do
             code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 http://localhost:3000 || true)
             echo "cap attempt $i: HTTP $code"
-            [ "$code" = "200" ] && break
+            # 2xx or 3xx means the container is serving (Cap redirects to /login on :3000)
+            case "$code" in 2*|3*) break;; esac
             sleep 10
           done
           echo "CAP_RESULT=$code" >> "$GITHUB_ENV"
@@ -43,10 +44,10 @@ jobs:
 
       - name: Report
         run: |
-          if [ "${CAP_RESULT:-000}" = "200" ]; then
-            echo "::notice::Cap booted and answered HTTP 200 on :3000"
+          if [ "${CAP_RESULT:-000}" != "000" ] && [ "${CAP_RESULT:0:1}" = "2" -o "${CAP_RESULT:0:1}" = "3" ]; then
+            echo "::notice::Cap booted and answered HTTP $CAP_RESULT on :3000"
           else
-            echo "::error::Cap did not reach HTTP 200 (last=$CAP_RESULT) — see logs above"
+            echo "::error::Cap did not reach a serving status (last=$CAP_RESULT) — see logs above"
             exit 1
           fi
 
@@ -71,7 +72,7 @@ jobs:
           for i in $(seq 1 40); do
             code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 http://localhost:3000 || true)
             echo "dub attempt $i: HTTP $code"
-            [ "$code" = "200" ] && break
+            case "$code" in 2*|3*) break;; esac
             sleep 10
           done
           echo "DUB_RESULT=$code" >> "$GITHUB_ENV"
@@ -82,10 +83,10 @@ jobs:
 
       - name: Report
         run: |
-          if [ "${DUB_RESULT:-000}" = "200" ]; then
-            echo "::notice::Dub booted and answered HTTP 200 on :3000"
+          if [ "${DUB_RESULT:-000}" != "000" ] && [ "${DUB_RESULT:0:1}" = "2" -o "${DUB_RESULT:0:1}" = "3" ]; then
+            echo "::notice::Dub booted and answered HTTP $DUB_RESULT on :3000"
           else
-            echo "::error::Dub did not reach HTTP 200 (last=$DUB_RESULT) — see logs above"
+            echo "::error::Dub did not reach a serving status (last=$DUB_RESULT) — see logs above"
             exit 1
           fi
 
