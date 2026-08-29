@@ -1,0 +1,94 @@
+name: cap-dub-build-test
+# Builds + boots Cap and Dub on GitHub's free Linux runners (which have Docker) to PROVE
+# they actually run — not just parse. This is the honest "GitHub Docker hosting" proof:
+# the runners are not persistent, so this is a build/integration check, not 24/7 hosting.
+# Use a GitHub Codespace (Docker + port forwarding) for an interactive dev host, or
+# Oracle Cloud Always Free for true persistent hosting (both documented in README/EXTENDED).
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'docker-cap.yml'
+      - 'docker-dub.yml'
+      - 'scripts/setup_cap.sh'
+      - 'scripts/setup_dub.sh'
+      - 'build-context/**'
+      - '.github/workflows/cap-dub-build-test.yml'
+
+jobs:
+  cap:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Cap media-server + start stack
+        run: |
+          bash scripts/setup_cap.sh
+          # setup_cap builds media-server then `docker compose -f docker-cap.yml up -d`
+
+      - name: Wait + verify cap-web answers
+        run: |
+          code="000"
+          for i in $(seq 1 30); do
+            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 http://localhost:3000 || true)
+            echo "cap attempt $i: HTTP $code"
+            [ "$code" = "200" ] && break
+            sleep 10
+          done
+          echo "CAP_RESULT=$code" >> "$GITHUB_ENV"
+
+      - name: Dump logs on failure
+        if: failure() || env.CAP_RESULT != '200'
+        run: docker compose -f docker-cap.yml logs --no-color >> /tmp/cap.log 2>&1; tail -50 /tmp/cap.log
+
+      - name: Report
+        run: |
+          if [ "${CAP_RESULT:-000}" = "200" ]; then
+            echo "::notice::Cap booted and answered HTTP 200 on :3000"
+          else
+            echo "::error::Cap did not reach HTTP 200 (last=$CAP_RESULT) — see logs above"
+            exit 1
+          fi
+
+      - name: Tear down
+        if: always()
+        run: docker compose -f docker-cap.yml down -v || true
+
+  dub:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pnpm (Dub is a pnpm monorepo)
+        run: corepack enable && corepack prepare pnpm@9 --activate
+
+      - name: Build Dub web + start local stack
+        run: bash scripts/setup_dub.sh
+
+      - name: Wait + verify dub-web answers
+        run: |
+          code="000"
+          for i in $(seq 1 40); do
+            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 http://localhost:3000 || true)
+            echo "dub attempt $i: HTTP $code"
+            [ "$code" = "200" ] && break
+            sleep 10
+          done
+          echo "DUB_RESULT=$code" >> "$GITHUB_ENV"
+
+      - name: Dump logs on failure
+        if: failure() || env.DUB_RESULT != '200'
+        run: docker compose -f docker-dub.yml logs --no-color >> /tmp/dub.log 2>&1; tail -60 /tmp/dub.log
+
+      - name: Report
+        run: |
+          if [ "${DUB_RESULT:-000}" = "200" ]; then
+            echo "::notice::Dub booted and answered HTTP 200 on :3000"
+          else
+            echo "::error::Dub did not reach HTTP 200 (last=$DUB_RESULT) — see logs above"
+            exit 1
+          fi
+
+      - name: Tear down
+        if: always()
+        run: docker compose -f docker-dub.yml down -v || true

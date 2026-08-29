@@ -4,14 +4,13 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-PINNED_CAP_COMMIT="0b94e7f"   # bump when you want a newer Cap; verify at github.com/CapSoftware/Cap/commits/main
+PINNED_CAP_COMMIT="9f6d8dd"   # Cap main HEAD 2026-08-28; verify at github.com/CapSoftware/Cap/commits/main
 CTX_DIR="build-context/cap-media-server"
 
 if [ ! -d "$CTX_DIR/.git" ] && [ ! -f "$CTX_DIR/Dockerfile.standalone" ]; then
   echo "==> Cloning Cap (pinned $PINNED_CAP_COMMIT) for media-server build context..."
   rm -rf "$CTX_DIR"
-  git clone --depth 1 https://github.com/CapSoftware/Cap.git "$CTX_DIR"
-  git -C "$CTX_DIR" fetch --depth 1 origin "$PINNED_CAP_COMMIT" 2>/dev/null || true
+  git clone https://github.com/CapSoftware/Cap.git "$CTX_DIR"
   git -C "$CTX_DIR" checkout "$PINNED_CAP_COMMIT" 2>/dev/null || echo "WARN: pin checkout failed; using default branch"
 fi
 
