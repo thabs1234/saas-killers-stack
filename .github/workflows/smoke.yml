@@ -48,4 +48,8 @@ jobs:
 
       - name: Tear down
         if: always()
-        run: docker compose down -v
+        run: |
+          docker compose logs --no-color listmonk listmonk-db >> /tmp/stack.log 2>&1 || true
+          docker compose down -v
+          echo "=== last 40 lines of container logs (for debugging) ==="
+          tail -40 /tmp/stack.log || true

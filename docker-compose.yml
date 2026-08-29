@@ -25,11 +25,17 @@ services:
   listmonk:
     image: listmonk/listmonk:latest
     container_name: listmonk
-    command: ["./listmonk", "--install", "--config", "/listmonk/config.toml"]
     ports:
       - "9000:9000"
-    volumes:
-      - ./listmonk/config.toml:/listmonk/config.toml
+    environment:
+      LISTMONK_app__address: "0.0.0.0:9000"
+      LISTMONK_db__host: listmonk-db
+      LISTMONK_db__port: "5432"
+      LISTMONK_db__user: listmonk
+      LISTMONK_db__password: listmonk
+      LISTMONK_db__database: listmonk
+      LISTMONK_db__ssl_mode: disable
+    command: [sh, -c, "./listmonk --install --idempotent --yes --config '' && ./listmonk --upgrade --yes --config '' && ./listmonk --config ''"]
     depends_on:
       listmonk-db:
         condition: service_healthy

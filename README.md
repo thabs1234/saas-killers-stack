@@ -42,7 +42,7 @@ docker compose up -d
 #   Launchpad     -> open launchpad/index.html
 ```
 
-First run of Listmonk: the container runs `--install` against the bundled `listmonk/config.toml`, which auto-migrates the Postgres schema on first boot. Log in with `listmonk` / `listmonk`.
+First run of Listmonk: the container runs `listmonk --install --idempotent && --upgrade && serve` (chained in the compose `command`), auto-migrating the Postgres schema on first boot, then serves. Log in with `listmonk` / `listmonk`.
 First run of Stirling-PDF: nothing to configure — it just works. `SECURITY_ENABLELOGIN=false` is set in the compose so the root stays open for local use (newer images gate the UI behind a login by default).
 
 ## Prove it actually runs (CI smoke test)
