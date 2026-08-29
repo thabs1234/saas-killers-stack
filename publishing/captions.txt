@@ -1,0 +1,23 @@
+# Post-ready social captions — SAAS Killers stack
+# Audience: SA small businesses / Polokwane salons & local services (SiteCraft + Come & Buy)
+# Plain, one-hashtag-max, paste-and-post.
+
+=== CAPTION 1 — Facebook (local business owner angle) ===
+Paying R300+ a month just to split a PDF or send a newsletter? You don't have to.
+We packaged 5 open-source tools you can run yourself — no monthly subscription.
+Replace Adobe, Mailchimp, Miro, Loom and Bitly with free GitHub repos. Save ~R24k a year.
+Your data stays on your machine. Full setup in one folder.
+#OpenSource
+
+=== CAPTION 2 — Instagram (salon / beautician angle) ===
+Your salon doesn't need 5 apps billing you every month.
+Run your own PDF editor, email list and booking whiteboard — free, on your laptop.
+We set it up as a one-command Docker stack. DM us "STACK" and we'll send it.
+#SmallBusinessSA
+
+=== CAPTION 3 — Generic / LinkedIn ===
+Killing SaaS bills is the easiest money you'll save this year.
+5 free, self-hosted GitHub repos replace ~R1,296/yr of subscriptions:
+Stirling-PDF, Listmonk, Excalidraw, Cap, Dub.
+We turned the method into a runnable stack. Link in bio.
+#SelfHosting

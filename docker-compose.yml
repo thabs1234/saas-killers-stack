@@ -1,0 +1,46 @@
+# saas-killers-stack — runnable core
+# Two services verified to run with a single `docker compose up -d`:
+#   - Stirling-PDF  (replaces Adobe Acrobat)  -> http://localhost:8080
+#   - Listmonk+PG  (replaces Mailchimp)      -> http://localhost:9000
+# Excalidraw / Cap / Dub need extra steps — see EXTENDED.md (not in this compose
+# because they are not single clean containers).
+
+services:
+  stirling-pdf:
+    image: frooodle/s-pdf:latest
+    container_name: stirling-pdf
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data/stirling:/usr/share/tessdata
+    restart: unless-stopped
+
+  listmonk:
+    image: listmonk/listmonk:latest
+    container_name: listmonk
+    ports:
+      - "9000:9000"
+    environment:
+      - LISTMONK_APP__DB__HOST=listmonk-db
+      - LISTMONK_APP__DB__USER=listmonk
+      - LISTMONK_APP__DB__PASSWORD=listmonk
+      - LISTMONK_APP__DB__DATABASE=listmonk
+    depends_on:
+      - listmonk-db
+    restart: unless-stopped
+
+  listmonk-db:
+    image: postgres:15-alpine
+    container_name: listmonk-db
+    environment:
+      - POSTGRES_USER=listmonk
+      - POSTGRES_PASSWORD=listmonk
+      - POSTGRES_DB=listmonk
+    volumes:
+      - ./data/listmonk:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  # Excalidraw: no official single-container image.
+  # Use excalidraw.com (free) or the Vercel one-click deploy — see EXTENDED.md.
+  # Cap: desktop app from github.com/CapSoftware/Cap — not containerised here.
+  # Dub: needs Postgres+Redis+Tinybird — use dubinc/dub official compose — see EXTENDED.md.

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SAAS Killers — Launchpad</title>
+<style>
+  :root { color-scheme: dark; }
+  body { font-family: system-ui, sans-serif; background:#0d1117; color:#e6edf3; margin:0; padding:32px; }
+  h1 { font-size:22px; margin:0 0 4px; }
+  p.sub { color:#8b949e; margin:0 0 24px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:16px; }
+  .card { background:#161b22; border:1px solid #30363d; border-radius:12px; padding:16px; }
+  .card h2 { font-size:15px; margin:0 0 6px; }
+  .card .rep { color:#58a6ff; font-size:12px; word-break:break-all; }
+  .card .alt { color:#8b949e; font-size:12px; margin:8px 0; }
+  .card a { display:inline-block; margin-top:8px; color:#3fb950; text-decoration:none; font-weight:600; }
+  .card a:hover { text-decoration:underline; }
+  .off { opacity:.5; }
+  footer { margin-top:28px; color:#6e7681; font-size:12px; }
+</style>
+</head>
+<body>
+  <h1>SAAS Killers — Local Launchpad</h1>
+  <p class="sub">Open-source replacements running on your machine via Docker. Start with <code>docker compose up -d</code>.</p>
+  <div class="grid">
+    <div class="card">
+      <h2>Stirling-PDF</h2>
+      <div class="alt">Replaces Adobe Acrobat</div>
+      <div class="rep">Stirling-Tools/Stirling-PDF</div>
+      <a href="http://localhost:8080" target="_blank">Open → localhost:8080</a>
+    </div>
+    <div class="card">
+      <h2>Listmonk</h2>
+      <div class="alt">Replaces Mailchimp</div>
+      <div class="rep">knadh/listmonk</div>
+      <a href="http://localhost:9000" target="_blank">Open → localhost:9000</a>
+    </div>
+    <div class="card">
+      <h2>Excalidraw</h2>
+      <div class="alt">Replaces Miro</div>
+      <div class="rep">excalidraw/excalidraw</div>
+      <a href="https://excalidraw.com" target="_blank">Open excalidraw.com →</a>
+    </div>
+    <div class="card">
+      <h2>Cap</h2>
+      <div class="alt">Replaces Loom</div>
+      <div class="rep">CapSoftware/Cap</div>
+      <a href="https://cap.so" target="_blank">Get desktop app →</a>
+    </div>
+    <div class="card">
+      <h2>Dub</h2>
+      <div class="alt">Replaces Bitly</div>
+      <div class="rep">dubinc/dub</div>
+      <a href="https://github.com/dubinc/dub" target="_blank">Self-host guide →</a>
+    </div>
+  </div>
+  <footer>Free-only stack. No paid tiers, no API keys. See README.md + EXTENDED.md.</footer>
+</body>
+</html>

@@ -1,0 +1,20 @@
+# WhatsApp outreach DRAFTS — staged, NOT sent.
+# Per publisher rules: do NOT send to unverified numbers. These are ready-to-send
+# templates for @lead-gen's verified leads. Replace {NAME} and confirm the number
+# before sending via the SiteCraft business WhatsApp.
+
+=== DRAFT A — cold lead (local business) ===
+Hi {NAME}, Thabang from SiteCraft. Quick one: most small businesses here pay R300+
+a month for PDF tools, newsletters and link trackers they could run free themselves.
+We built a one-folder open-source stack (Stirling-PDF, Listmonk, Excalidraw, Cap, Dub)
+— saves ~R24k/year, your data stays local. Want the setup?
+
+=== DRAFT B — warm / existing client ===
+Hey {NAME}, follow-up: the free SaaS-killer stack is ready. Replaces Adobe, Mailchimp,
+Miro, Loom & Bitly with self-hosted GitHub repos. I can drop the repo link + a 2-min
+setup walkthrough. Say "SEND" and it's yours.
+
+=== DRAFT C — salon specific ===
+Hi {NAME}, saw your salon's still on paid PDF/booking apps. We packaged 5 free tools
+you run on your own laptop — no monthly bill, no data leaving your hands. DM "STACK"
+and I'll send the folder + how-to.
