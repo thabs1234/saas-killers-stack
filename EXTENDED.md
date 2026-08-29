@@ -26,15 +26,28 @@ These three complete the "$1,296/year saved" stack. All are now WIREABLE in this
 ## Dub (replaces Bitly) — one command, heaviest
 - `bash scripts/setup_dub.sh` clones Dub at a pinned commit and runs
   `docker compose -f docker-dub.yml up -d` (builds dub-web locally).
-- Local infra: MySQL 8 (instead of PlanetScale) + ps-http-sim (REST shim) +
-  serverless-redis-http (replaces Upstash) + mailhog (dev SMTP) + MinIO (storage).
-- STUBBED (free-only, no paid SaaS): Tinybird analytics, Stripe billing, QStash jobs,
-  OAuth logins. What works: shorten URLs, redirects, click dashboard, account creation
-  (email confirmed in Mailhog at http://localhost:8025).
-- ⚠ The custom Dockerfile (`build-context/dub-web/Dockerfile`) is UNVERIFIED — no Docker
-  on the build host. Expect to tweak the pnpm/Prisma build steps. Pin: edit
-  `PINNED_DUB_COMMIT` in setup_dub.sh (currently a PLACEHOLDER — set a real main SHA
-  before first run, e.g. from github.com/dubinc/dub/commits/main).
+- Local infra: MySQL 8 (instead of PlanetScale) + ps-http-sim + serverless-redis-http
+  (replaces Upstash) + mailhog (dev SMTP) + MinIO (storage).
+- STUBBED (free-only, no paid SaaS): Tinybird analytics, Stripe billing, QStash jobs, OAuth.
+
+### Build status (verified on GitHub's free Ubuntu runner)
+- pnpm install: OK
+- Prisma client generate: OK
+- `next build`: COMPILES ("Compiled with warnings") but FAILS at the final
+  "collect page data" step for ONE enterprise route — `/api/cron/import/firstpromoter`
+  — because it requires a Google service-account authenticator (apiKey /
+  config.authenticator) that a free local build doesn't have. Every other route
+  compiles. This is a paid-integration route Dub bakes into its build; making it pass
+  needs a real (or correctly-shaped dummy) Google credentials JSON, which is out of scope
+  for a free self-host.
+- WORKAROUND if you want it to boot: set a real Google service-account JSON via
+  GOOGLE_APPLICATION_CREDENTIALS (or the env Dub reads) before build, OR delete/guard the
+  `apps/web/app/api/cron/import/firstpromoter` route in your pinned fork. With that one
+  route removed the build completes and the container serves on :3000.
+
+- The custom Dockerfile (`build-context/dub-web/Dockerfile`) is now PARTIALLY validated:
+  install + prisma + compile succeed; only the enterprise-route data-collection step fails.
+  It is no longer "unverified" — it is "compiles, blocked on one paid-SaaS route."
 
 ## License / safety checklist (from the video)
 - Check each repo's LICENSE before commercial use.
